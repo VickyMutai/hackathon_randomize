@@ -92,9 +92,7 @@ export default function Home() {
       setMinSize(saved.minSize);
       setMaxSize(saved.maxSize);
       setView(
-        saved.view === "teams" && saved.teams.length
-          ? "teams"
-          : "participants",
+        saved.view === "teams" && saved.teams.length ? "teams" : "participants",
       );
     }
     setStorageReady(true);
