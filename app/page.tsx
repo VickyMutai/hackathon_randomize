@@ -5,25 +5,6 @@ import * as XLSX from 'xlsx';
 import { allocateTeams, moveMember, normalizeInstitution, Participant, swapMembers, Team, validateParticipants } from './lib/teamAllocator';
 import { buildExportRows, parseParticipantWorkbook, teamsToCsv } from './lib/tabular';
 
-const sampleParticipants: Participant[] = [
-  { id: 'p1', name: 'Amina Wanjiku', institution: 'Egerton University', email: 'amina@egerton.ac.ke', phone: '+254 712 440 101', skill: 'Crop science' },
-  { id: 'p2', name: 'Brian Kiptoo', institution: 'Eldoret National Polytechnic', email: 'brian@enp.ac.ke', phone: '+254 723 118 210', skill: 'IoT systems' },
-  { id: 'p3', name: 'Cynthia Atieno', institution: 'Maseno University', email: 'cynthia@maseno.ac.ke', phone: '+254 734 501 882', skill: 'Data science' },
-  { id: 'p4', name: 'David Mwangi', institution: 'Jomo Kenyatta University', email: 'david@jkuat.ac.ke', phone: '+254 710 032 199', skill: 'Software engineering' },
-  { id: 'p5', name: 'Esther Chebet', institution: 'Kenya Climate Centre', email: 'esther@kcc.or.ke', phone: '+254 700 628 445', skill: 'Climate policy' },
-  { id: 'p6', name: 'Farah Noor', institution: 'University of Nairobi', email: 'farah@uonbi.ac.ke', phone: '+254 722 615 902', skill: 'GIS mapping' },
-  { id: 'p7', name: 'George Omondi', institution: 'Egerton University', email: 'george@egerton.ac.ke', phone: '+254 711 441 937', skill: 'Agribusiness' },
-  { id: 'p8', name: 'Halima Adan', institution: 'Eldoret National Polytechnic', email: 'halima@enp.ac.ke', phone: '+254 702 341 287', skill: 'Product design' },
-  { id: 'p9', name: 'Ian Mutua', institution: 'Strathmore University', email: 'ian@strathmore.edu', phone: '+254 733 219 004', skill: 'Machine learning' },
-  { id: 'p10', name: 'Joyce Njeri', institution: 'KALRO', email: 'joyce@kalro.org', phone: '+254 721 539 616', skill: 'Soil health' },
-  { id: 'p11', name: 'Kevin Ouma', institution: 'Maseno University', email: 'kevin@maseno.ac.ke', phone: '+254 719 263 991', skill: 'Mobile development' },
-  { id: 'p12', name: 'Lydia Wambui', institution: 'Kenyatta University', email: 'lydia@ku.ac.ke', phone: '+254 707 820 146', skill: 'Community engagement' },
-  { id: 'p13', name: 'Martin Kibet', institution: 'University of Nairobi', email: 'martin@uonbi.ac.ke', phone: '+254 713 097 562', skill: 'Water systems' },
-  { id: 'p14', name: 'Naomi Achieng', institution: 'KALRO', email: 'naomi@kalro.org', phone: '+254 720 460 115', skill: 'Plant pathology' },
-  { id: 'p15', name: 'Peter Kamau', institution: 'Technical University of Kenya', email: 'peter@tukenya.ac.ke', phone: '+254 735 882 340', skill: 'Hardware' },
-  { id: 'p16', name: 'Ruth Jepchirchir', institution: 'Moi University', email: 'ruth@mu.ac.ke', phone: '+254 709 731 628', skill: 'Renewable energy' },
-];
-
 const blankParticipant = (): Participant => ({ id: crypto.randomUUID(), name: '', institution: '', email: '', phone: '', skill: '' });
 const initials = (name: string) => name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
 
@@ -36,7 +17,7 @@ function downloadBlob(content: BlobPart, filename: string, type: string) {
 }
 
 export default function Home() {
-  const [participants, setParticipants] = useState(sampleParticipants);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [minSize, setMinSize] = useState(3);
   const [maxSize, setMaxSize] = useState(5);
@@ -58,6 +39,16 @@ export default function Home() {
     setParticipants((current) => current.some((person) => person.id === clean.id) ? current.map((person) => person.id === clean.id ? clean : person) : [...current, clean]);
     setTeams([]);
     setEditing(null);
+  };
+
+  const clearAll = () => {
+    if (!participants.length || !window.confirm('Clear all participants and generated teams? This cannot be undone.')) return;
+    setParticipants([]);
+    setTeams([]);
+    setSelected([]);
+    setQuery('');
+    setView('participants');
+    setNotice({ kind: 'success', text: 'All participants and team allocations have been cleared.' });
   };
 
   const generate = () => {
@@ -124,13 +115,13 @@ export default function Home() {
 
     {view === 'participants' ? <div className="workspace">
       <section className="main-panel">
-        <div className="page-heading"><div><p className="eyebrow">ROSTER SETUP</p><h1>Participants</h1><p>Add everyone taking part, then review the roster before creating balanced teams.</p></div><div className="heading-actions"><input ref={fileRef} hidden type="file" accept=".csv,.xls,.xlsx" onChange={readUpload} /><button className="button secondary" onClick={() => fileRef.current?.click()}>⇧ Upload CSV / Excel</button><button className="button primary" onClick={() => setEditing(blankParticipant())}>＋ Add participant</button></div></div>
+        <div className="page-heading"><div><p className="eyebrow">ROSTER SETUP</p><h1>Participants</h1><p>Add everyone taking part, then review the roster before creating balanced teams.</p></div><div className="heading-actions"><a className="button secondary" href="/ciris-participant-upload-template.csv" download>↓ Sample CSV</a><button className="button danger" onClick={clearAll} disabled={!participants.length}>Clear all</button><input ref={fileRef} hidden type="file" accept=".csv,.xls,.xlsx" onChange={readUpload} /><button className="button secondary" onClick={() => fileRef.current?.click()}>⇧ Upload CSV / Excel</button><button className="button primary" onClick={() => setEditing(blankParticipant())}>＋ Add participant</button></div></div>
         <div className="stat-grid"><article><span className="stat-icon green">◎</span><div><small>TOTAL PARTICIPANTS</small><strong>{participants.length}</strong></div><em>Ready to review</em></article><article><span className="stat-icon blue">◇</span><div><small>INSTITUTIONS</small><strong>{institutionCount}</strong></div><em>Diverse representation</em></article><article><span className={`stat-icon ${blockingIssues.length ? 'red' : 'green'}`}>{blockingIssues.length ? '!' : '✓'}</span><div><small>DATA QUALITY</small><strong>{blockingIssues.length ? `${blockingIssues.length} issues` : 'All clear'}</strong></div><em>{blockingIssues.length ? 'Needs attention' : 'Ready to randomize'}</em></article></div>
         {issues.length > 0 && <div className="validation-box"><strong>Validation review</strong><span>{blockingIssues.length ? 'Fix the highlighted records before generating teams.' : 'Review these possible matches.'}</span>{issues.slice(0, 4).map((issue, index) => <p key={`${issue.participantId}-${index}`}>• {issue.message}</p>)}</div>}
         <div className="table-card"><div className="table-tools"><div><strong>Participant roster</strong><span>{filtered.length} of {participants.length} people</span></div><label className="search">⌕<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, institution or skill" /></label></div><div className="table-scroll"><table><thead><tr><th>Participant</th><th>Institution / organisation</th><th>Area of expertise</th><th>Contact</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{filtered.map((person) => {
           const hasError = issues.some((issue) => issue.participantId === person.id && issue.type === 'error');
           return <tr key={person.id} className={hasError ? 'row-error' : ''}><td><div className="person-cell"><span className="avatar">{initials(person.name || '?')}</span><div><strong>{person.name || 'Missing name'}</strong><small>{person.email || 'No email provided'}</small></div></div></td><td><strong className="institution">{person.institution || 'Missing institution'}</strong></td><td><span className="skill-tag">{person.skill || 'Not specified'}</span></td><td><span className="phone">{person.phone || '—'}</span></td><td><div className="row-actions"><button onClick={() => setEditing(person)}>Edit</button><button className="delete" onClick={() => { setParticipants((current) => current.filter((item) => item.id !== person.id)); setTeams([]); }} aria-label={`Delete ${person.name}`}>×</button></div></td></tr>;
-        })}</tbody></table></div>{!filtered.length && <div className="empty-state">No participants match your search.</div>}</div>
+        })}</tbody></table></div>{!filtered.length && <div className="empty-state">{participants.length ? 'No participants match your search.' : 'No participants yet. Add someone manually or upload a CSV/Excel file.'}</div>}</div>
       </section>
       <aside className="control-panel"><div className="control-title"><span>✦</span><div><p className="eyebrow">ALLOCATION RULES</p><h2>Generate teams</h2></div></div><p className="control-copy">We’ll randomize the roster while protecting institution diversity.</p><div className="size-fields"><label>Minimum team size<input type="number" min="1" max="20" value={minSize} onChange={(e) => setMinSize(Number(e.target.value))} /></label><label>Maximum team size<input type="number" min="1" max="20" value={maxSize} onChange={(e) => setMaxSize(Number(e.target.value))} /></label></div><div className="rule-card"><span>✓</span><div><strong>Institution guardrail</strong><p>No two people from the same institution will ever share a team.</p></div></div><div className="rule-list"><p><span>01</span> Sizes stay as equal as possible</p><p><span>02</span> Every eligible person is assigned once</p><p><span>03</span> Impossible distributions are stopped</p></div><button className="randomize" onClick={generate} disabled={!!blockingIssues.length || participants.length === 0}>Randomize teams <span>→</span></button>{!!blockingIssues.length && <p className="blocked-note">Resolve roster errors to continue.</p>}<p className="privacy-note">Your roster is processed in this browser and is not sent to an external database.</p></aside>
     </div> : <section className="results-page">
